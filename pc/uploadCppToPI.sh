@@ -3,22 +3,21 @@ d=`date +%H:%M:%S`
 
 scp -o ConnectTimeout=3 $2 pi@$1:$3
 STATUS=$?
-if [ $STATUS -eq 0 ]; then    
-    echo "[$d] Übertragung zum PI erfolgreich!"
-    echo "[$d] Rebuild" $4
+if [ $STATUS -eq 0 ]; then
+    echo "[$d] Successfully copied latest files!"
+    echo "[$d] Rebuild project"
     echo " "
-    replace_with=""    	
-    ssh pi@$1 "cd $3; mv ${4/.cpp/$replace_with} ${4/.cpp/$replace_with}_backup; make OUT=${4/.cpp/$replace_with}"
+    ssh pi@$1 "cd $3; make all"
 
     STATUS=$?
     if [ $STATUS -eq 0 ]; then
 	echo " "
-	echo "[$d] Fertig! Build erfolgreich!"
+	echo "[$d] Finished! Build complete!"
     else 
 	echo " "
-        echo "[$d] Fehler. Build abgebrochen!"
+        echo "[$d] Failed. Aborted build!"
     fi
 else 
-    echo "[$d] Fehler bei der Übertragung zum PI!"
+    echo "[$d] Failed to opload files to pi!"
 fi
 
