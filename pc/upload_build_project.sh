@@ -1,13 +1,15 @@
+
 #!/bin/bash
 d=`date +%H:%M:%S`
 
-scp -o ConnectTimeout=3 $2 pi@$1:$3
+rsync --progress -ru --exclude-from "$2/.gitignore" -e ssh $2/* pi@$1:$3/$4
+
 STATUS=$?
 if [ $STATUS -eq 0 ]; then
-    echo "[$d] Successfully copied latest files!"
+    echo "[$d] Successfully copied changed files!"
     echo "[$d] Rebuild project"
     echo " "
-    ssh pi@$1 "cd $3; make all"
+    ssh pi@$1 "cd $3/$4/Debug; make all"
 
     STATUS=$?
     if [ $STATUS -eq 0 ]; then
@@ -18,6 +20,6 @@ if [ $STATUS -eq 0 ]; then
         echo "[$d] Failed. Aborted build!"
     fi
 else 
-    echo "[$d] Failed to opload files to pi!"
+    echo "[$d] Failed to upload files to pi!"
 fi
 
