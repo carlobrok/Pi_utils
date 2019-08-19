@@ -7,11 +7,20 @@ import os
 import tarfile
 import shutil
 
-folder_path = "/home/pi/projects/Robot_log/Debug/"
-program_path = folder_path + "Robot_log"
-sw_pin = 26             # WiringPi pin 26
-led_pin = None
 
+# ADJUST THESE VALUES:
+
+folder_path = "/home/pi/projects/Robot_log/Debug/"
+program_name = "Robot_log"
+
+led_pin = None
+sw_pin = 26             # WiringPi pin 26
+
+# ==== END ===============
+
+
+
+program_path = folder_path + program_name
 
 # ============ defs ===================
 
