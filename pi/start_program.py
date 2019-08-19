@@ -1,3 +1,4 @@
+import wiringpi
 import time  # time.sleep
 from datetime import datetime
 import signal
@@ -6,19 +7,31 @@ import os
 import tarfile
 import shutil
 
+folder_path = "/home/pi/projects/Robot_log/Debug/"
+program_path = folder_path + "Robot_log"
+sw_pin = 26             # WiringPi pin 26
+led_pin = None
+
+
+# ============ defs ===================
+
+def timestamp_str():
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
 def make_tarfile(output_filename, source_dir):
-    if source_dir in os.listdir():
+    if os.path.isdir(source_dir):
         with tarfile.open(output_filename, "w:gz") as tar:
             tar.add(source_dir, arcname=os.path.basename(source_dir))
             clear_folder(source_dir)
-            print("saved logs backup archive")
+            print("Saved logs to: " + output_filename)
     else:
         print("folder '" + source_dir + "' doesn't exist. No log files archived")
 
 def kill_prog(p):
     if p != None:
         os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-        make_tarfile("logs_backup.tar.gz","logs")
+        logs_archive_name = "logs_" + timestamp_str() + ".tar.gz"
+        make_tarfile(folder_path + logs_archive_name, folder_path + "logs")
         print("Stopped program")
 
 def clear_folder(folder):
@@ -31,28 +44,44 @@ def clear_folder(folder):
         except Exception as e:
             print(e)
 
+def prog_sw():
+    return wiringpi.digitalRead(26)
+
+# ======= main ===============
+
+def main():
+
+    print("Program: " + program_path)
+    print("")
+    p = None  # process holding variable
+
+    wiringpi.wiringPiSetup()
+    wiringpi.pinMode(26, 0) # Pinmode input
+    wiringpi.pullUpDnControl(26, 2) # Internal pullup
+
+    last_prog_sw = None
+
+    running = False
+
+    while True:
+        sw_state = prog_sw()
+        if sw_state != last_prog_sw:
+            time.sleep(0.1)
+            sw_state = prog_sw()
+
+            if running == True:
+                if sw_state != last_prog_sw and sw_state == 1:
+                    print("Starting program...")
+                    p = subprocess.Popen(program_path,shell=True,preexec_fn=os.setsid)
+                else:
+                    print("Stopping program!")
+                    kill_prog(p)
+                    p = None
+            elif running == False and sw_state == 0:
+                running = True
+        last_prog_sw = sw_state
+        time.sleep(0.05)
 
 
-program_name = "Robot_log"
-print("Program: " + program_name)
-#print("Enter filename: ")
-
-#program_name = input()
-
-print()
-print("Write 'start' or 'stop' to run / kill the program")
-print("Or 'abort' to kill program and exit")
-
-
-p = None
-
-while True:
-    cmd = input()
-    if cmd == "start":
-        p = subprocess.Popen(program_name,shell=True,preexec_fn=os.setsid)
-    elif cmd == "stop":
-        kill_prog(p)
-        p = None
-    elif cmd == "abort":
-        kill_prog(p)
-        break
+if __name__== "__main__":
+    main()
