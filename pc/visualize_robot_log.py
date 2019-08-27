@@ -5,6 +5,13 @@ import tarfile
 import tkinter as tk
 from tkinter import filedialog
 
+
+sen_log_name = 'sensor.log'
+deb_log_name = 'debug.log'
+beh_log_name = 'behavior.log'
+cam_log_name = 'camera.log'
+
+
 def rot_center(image, angle):
     """rotate an image while keeping its center and size"""
     orig_rect = image.get_rect()
@@ -39,9 +46,42 @@ def open_tar():
 
     file_path = filedialog.askopenfilename(filetypes=[("Tar files", "*.tar.gz")])
     if file_path:
-        return tarfile.open(file_path, 'r|gz'), file_path
+        return tarfile.open(file_path, encoding='utf-8'), file_path
     else:
         return None, None
+
+def read_tar_logs(tar_file):
+    sen_data = []
+    beh_data = []
+    deb_data = []
+    cam_data = []
+
+    for member in tar_file.getmembers():
+        f = tar_file.extractfile(member)
+
+        lines = [line.split() for line in f]
+
+        print(lines)
+
+        for line in lines:
+            for byte_literal in line:
+                byte_literal = byte_literal.decode("utf-8")
+
+        print(lines)
+
+
+        """if member.name == deb_log_name:
+            deb_data = f.readlines()
+        elif member.name == sen_log_name:
+            sen_data = f.readlines()
+        elif member.name == beh_log_name:
+            beh_data = f.readlines()
+        elif member.name == cam_log_name:
+            cam_data = f.readlines()
+"""
+    tar_file.close()
+
+    return beh_data, cam_data, deb_data, sen_data
 
 
 def main():
@@ -90,7 +130,7 @@ def main():
 
     logs_archive = None
     logs_archive_path = ""
-
+    logs_read = False
 
 
     m_time_start = time.time()
@@ -110,7 +150,9 @@ def main():
                     if t_archive != None and logs_archive == None and t_archive_path != logs_archive_path:
                         logs_archive = t_archive
                         logs_archive_path = t_archive_path
+                        read_tar_logs(logs_archive)
                         print("New file selected: " + logs_archive_path)
+
 
         screen.fill(background_color)
 
