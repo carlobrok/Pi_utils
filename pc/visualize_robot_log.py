@@ -11,6 +11,67 @@ deb_log_name = 'debug.log'
 beh_log_name = 'behavior.log'
 cam_log_name = 'camera.log'
 
+logs_archive = None
+logs_archive_path = ""
+
+sen_data = []
+beh_data = []
+deb_data = []
+cam_data = []
+
+light_gray = (220, 220, 220)
+dark_gray = (100, 100, 100)
+light_orange = (250, 141, 32)
+dark_orange = (204, 106, 41)
+light_green = (60, 212, 84)
+dark_green = (57, 158, 86)
+
+class Button():
+    def __init__(self, x, y, w, h, text, color, on_click, active = True):
+        self.color_inactive = (150, 150, 150)
+        self.color_active = color
+        self.active = active
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
+        self.font = pygame.font.SysFont('opensans', 20)
+        self.text = text
+        self.function = on_click
+
+    def draw(self, screen):
+        if self.active:
+            color = self.color_active
+        else:
+            color = self.color_inactive
+
+
+
+        drop_shadow_rect(screen, self.rect, 5, dark_gray, light_gray)
+        pygame.draw.rect(screen, color, self.rect)
+
+        surf = self.font.render(self.text, True, (0,0,0))
+        xo = self.x + (self.w - surf.get_width()) // 2
+        yo = self.y + (self.h - surf.get_height()) // 2
+        screen.blit(surf, (xo, yo))
+
+    def update_event(self, event):
+        if self.rect.collidepoint(event.pos) and self.active:
+            self.function()
+
+    def set_active(self, is_active):
+        self.active = is_active
+
+    def set_color(self, color):
+        self.color_active = color
+
+    def set_text(self, text):
+        self.text = text
+
+    def get_rect(self):
+        return self.rect
+
 
 def rot_center(image, angle):
     """rotate an image while keeping its center and size"""
@@ -40,6 +101,8 @@ def draw_text(text, screen, position = (0,0), size = 20, color = (0, 0, 0)):
     rendered_text = font.render(text, True, color)
     screen.blit(rendered_text, position)
 
+
+
 def open_tar():
     tk_root = tk.Tk()
     tk_root.withdraw()
@@ -51,10 +114,12 @@ def open_tar():
         return None, None
 
 def read_tar_logs(tar_file):
-    sen_data = []
-    beh_data = []
-    deb_data = []
-    cam_data = []
+    t_sen_data = []
+    t_beh_data = []
+    t_deb_data = []
+    t_cam_data = []
+
+    global sen_data, beh_data, deb_data, cam_data
 
     for member in tar_file.getmembers():
         f = tar_file.extractfile(member)
@@ -62,17 +127,27 @@ def read_tar_logs(tar_file):
         lines = [line.decode("utf-8").strip().split() for line in f]
 
         if member.name == deb_log_name:
-            deb_data = lines
+            t_deb_data = lines
         elif member.name == sen_log_name:
-            sen_data = lines
+            t_sen_data = lines
         elif member.name == beh_log_name:
-            beh_data = lines
+            t_beh_data = lines
         elif member.name == cam_log_name:
-            cam_data = lines
+            t_cam_data = lines
 
     tar_file.close()
 
-    return beh_data, cam_data, deb_data, sen_data
+    beh_data, cam_data, deb_data, sen_data = t_beh_data, t_cam_data, t_deb_data, t_sen_data
+
+def file_button():
+    global logs_archive
+    global logs_archive_path
+
+    t_archive, t_archive_path = open_tar()
+    read_tar_logs(t_archive)
+    logs_archive = t_archive
+    logs_archive_path = t_archive_path
+    print("File selected: " + logs_archive_path)
 
 
 def main():
@@ -81,21 +156,17 @@ def main():
     icon = pygame.image.load(os.getcwd() + "/kamel_log_visualizer_icon.png")
     pygame.display.set_icon(icon)
 
-
     (width, height) = (1280, 720)
     (robot_width, robot_height) = (360, 400)
     (robot_x, robot_y) = (100, (height-robot_height)/2)
 
-    rect_log_button = pygame.Rect((width / 2 - 100, 20, 135, 20))
+    log_button = Button(width / 2 - 100, 20, 135, 20, "Select file", light_orange, file_button)
+    #log_button = Button(width / 2 - 100, 20, 135, 20, "Select file", file_button)
 
     screen = pygame.display.set_mode((width, height))
 
-    light_gray = (220, 220, 220)
-    dark_gray = (100, 100, 100)
-    light_orange = (250, 141, 32)
-    light_green = (130, 222, 64)
-    background_color = light_gray
 
+    background_color = light_gray
 
     platte_img = pygame.image.load(os.getcwd() + "/holzplatte.jpg")
     platte_image =  pygame.transform.scale(platte_img, (robot_width, robot_height))
@@ -119,16 +190,6 @@ def main():
     tou_sen_img_r = pygame.transform.rotate(tou_sen_img, 180)
 
 
-    logs_archive = None
-    logs_archive_path = ""
-    logs_read = False
-
-    sen_data = []
-    beh_data = []
-    deb_data = []
-    cam_data = []
-
-
     m_time_start = time.time()
 
     running = True
@@ -141,14 +202,7 @@ def main():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if rect_log_button.collidepoint(event.pos):
-                    t_archive, t_archive_path = open_tar()
-                    if t_archive != None and logs_archive == None and t_archive_path != logs_archive_path:
-                        beh_data, cam_data, deb_data, sen_data = read_tar_logs(t_archive)
-                        logs_archive = t_archive
-                        logs_archive_path = t_archive_path
-                        print("New file selected: " + logs_archive_path)
-
+                log_button.update_event(event)
 
         screen.fill(background_color)
 
@@ -168,14 +222,47 @@ def main():
         screen.blit(tou_sen_img_l, (robot_x + 45, robot_y + robot_height - 18))
         screen.blit(tou_sen_img_r, (robot_x + robot_width - 60 - 45, robot_y + robot_height - 18))
 
-        drop_shadow_rect(screen, rect_log_button, 5, dark_gray, light_gray)
         if logs_archive == None:
-            pygame.draw.rect(screen, light_orange, rect_log_button)
-            draw_text("Select file", screen, position = (rect_log_button[0] + 15, rect_log_button[1]- 5))
+            log_button.set_color(dark_orange)
+            log_button.set_text("Select file")
+            #draw_text("Select file", screen, position = (rect_log_button[0] + 15, rect_log_button[1]- 5))
         else:
-            pygame.draw.rect(screen, light_green, rect_log_button)
-            draw_text("File selected: " , screen, position = (rect_log_button[0] + 5, rect_log_button[1] - 5))
-            draw_text(logs_archive_path, screen, size = 18, position = (rect_log_button[0] + rect_log_button[2] + 10, rect_log_button[1] - 3))
+            log_button.set_color(dark_green)
+            log_button.set_text("File selected:")
+            #draw_text("File selected: " , screen, position = (rect_log_button[0] + 5, rect_log_button[1] - 5))
+            t_logs_archive_path = logs_archive_path
+            t_path_length = len(t_logs_archive_path)
+            if t_path_length > 55:
+                n_start = t_path_length - 52
+                t_logs_archive_path = "..." + logs_archive_path[n_start:]
+            draw_text(t_logs_archive_path, screen, size = 18, position = (log_button.get_rect()[0] + log_button.get_rect()[2] + 10, log_button.get_rect()[1] - 3))
+
+        log_button.draw(screen)
+
+        if beh_data:
+            draw_text("behavior.log", screen, position=(width / 2 - 100, 50), color=dark_green)
+        else:
+            draw_text("behavior.log", screen, position=(width / 2 - 100, 50), color=dark_orange)
+
+        if deb_data:
+            draw_text("debug.log", screen, position=(width / 2 - 100 + 185, 50), color=dark_green)
+        else:
+            draw_text("debug.log", screen, position=(width / 2 - 100 + 185, 50), color=dark_orange)
+
+        if cam_data:
+            draw_text("camera.log", screen, position=(width / 2 - 100 + 185 * 2, 50), color=dark_green)
+        else:
+            draw_text("camera.log", screen, position=(width / 2 - 100 + 185 * 2, 50), color=dark_orange)
+
+        if sen_data:
+            draw_text("sensor.log", screen, position=(width / 2 - 100 + 185*3, 50), color=dark_green)
+        else:
+            draw_text("sensor.log", screen, position=(width / 2 - 100 + 185*3, 50), color=dark_orange)
+
+        if beh_data and deb_data and cam_data and sen_data:
+            pass
+        else:
+            pass
 
 
         pygame.display.update()
