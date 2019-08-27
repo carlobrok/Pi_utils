@@ -4,7 +4,7 @@ import os
 import tarfile
 import tkinter as tk
 from tkinter import filedialog
-
+import numpy as np
 
 sen_log_name = 'sensor.log'
 deb_log_name = 'debug.log'
@@ -59,26 +59,17 @@ def read_tar_logs(tar_file):
     for member in tar_file.getmembers():
         f = tar_file.extractfile(member)
 
-        lines = [line.split() for line in f]
+        lines = [line.decode("utf-8").strip().split() for line in f]
 
-        print(lines)
-
-        for line in lines:
-            for byte_literal in line:
-                byte_literal = byte_literal.decode("utf-8")
-
-        print(lines)
-
-
-        """if member.name == deb_log_name:
-            deb_data = f.readlines()
+        if member.name == deb_log_name:
+            deb_data = lines
         elif member.name == sen_log_name:
-            sen_data = f.readlines()
+            sen_data = lines
         elif member.name == beh_log_name:
-            beh_data = f.readlines()
+            beh_data = lines
         elif member.name == cam_log_name:
-            cam_data = f.readlines()
-"""
+            cam_data = lines
+
     tar_file.close()
 
     return beh_data, cam_data, deb_data, sen_data
@@ -132,6 +123,11 @@ def main():
     logs_archive_path = ""
     logs_read = False
 
+    sen_data = []
+    beh_data = []
+    deb_data = []
+    cam_data = []
+
 
     m_time_start = time.time()
 
@@ -148,9 +144,9 @@ def main():
                 if rect_log_button.collidepoint(event.pos):
                     t_archive, t_archive_path = open_tar()
                     if t_archive != None and logs_archive == None and t_archive_path != logs_archive_path:
+                        beh_data, cam_data, deb_data, sen_data = read_tar_logs(t_archive)
                         logs_archive = t_archive
                         logs_archive_path = t_archive_path
-                        read_tar_logs(logs_archive)
                         print("New file selected: " + logs_archive_path)
 
 
