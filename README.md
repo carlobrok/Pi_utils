@@ -40,5 +40,5 @@ Script uploads changed *.cpp* file to the given ip address and rebuilds the proj
 * **ip address** of the remote raspberry pi (e.g. *192.168.20.95*)
 * **source folder** on the computer (e.g. *~/git/PIv10/*)
 * the **parent folder** of the project folder (e.g. */home/pi/projects/*)
-* use **-c** to clean project, rebuild everything 
+* use **-c** to clean project, rebuild everything (optional)
 
