@@ -27,9 +27,9 @@ if [ $STATUS -eq 0 ]; then
     # if arg -c is given clean and build, else only build
     if [ "$4" = "-c" ]; then
 	echo "clean all files"
-        ssh -t pi@$1 "cd $3$project_name/Debug; make clean; make all -j4"
+        ssh -t pi@$1 "cd $3$project_name/Debug; make clean; make all"
     else
-        ssh -t pi@$1 "cd $3$project_name/Debug; make all -j4"
+        ssh -t pi@$1 "cd $3$project_name/Debug; make all"
     fi
 
     # print success / fail message
