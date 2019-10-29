@@ -1,5 +1,5 @@
 #!/bin/bash
-# Arguments: <ip> <filepath> <project subfolder on pi> [-c]
+# Arguments: [OPTIONS] <ip> <filepath> <project subfolder on pi>
 # Example: ./upload_build_project.sh 192.168.20.95 ~/git/KamelPi/ /home/pi/projects/
 
 function usage {
@@ -7,6 +7,7 @@ function usage {
   echo "     ./upload_build_project.sh [OPTIONS] <ip> <project path> <projects folder on pi>"
   echo ""
   echo "Options:"
+  echo "     -h      print this help message"
   echo "     -u      uploads all files; use when the date of the pi files aren't correct"
   echo "     -r      rebuilds the entire project"
   echo "     -j      n threads used to build; default is 1"
@@ -32,18 +33,20 @@ function valid_ip()
 }
 
 REBUILD="N"
-RSYNC_OPTS=-rzvu
-THREADS=1
+RSYNC_OPTS=-rzvtu
+THREADS="1"
 
 
-while getopts ":uj:r" opt; do
+while getopts ":huj:r" opt; do
   case ${opt} in
-    u ) RSYNC_OPTS=-rzv ;;
+    h ) usage
+        exit ;;
+    u ) RSYNC_OPTS=-rzvt ;;
     r ) REBUILD="Y" ;;
     j ) if ! [[ $OPTARG =~ ^[0-9]+$ ]] ; then
           echo "error: option -j: $OPTARG is not a number" >&2; exit 1
         fi
-        THREADS="$1" ;;
+        THREADS="$OPTARG" ;;
     \? ) echo "Invalid option: -$OPTARG" 1>&2
          usage
          exit ;;
@@ -54,7 +57,7 @@ while getopts ":uj:r" opt; do
 done
 shift $((OPTIND -1))
 
-
+echo $RSYNC_OPTS
 
 if [ $# -ne 3 ]; then
   usage
@@ -82,27 +85,27 @@ echo "[$(date +%H:%M:%S)] Sync project data from $2 to pi@$1:$3$project_name"
 echo ""
 # sync local files with files on remote device
 
-rsync --progress $RSYNC_OPTS --exclude-from="$2.gitignore" -e ssh $2* pi@$1:$3$project_name
+rsync $RSYNC_OPTS --exclude-from="$2.gitignore" -e ssh $2* pi@$1:$3$project_name
 
 # if sync has been successfully (clean files and) rebuild project
-STATUS=$?
-if [ $STATUS -eq 0 ]; then
+
+if [ $? -eq 0 ]; then
   echo "Successfully copied changed files!"
-  echo "Rebuild project"
   echo " "
 
   # if arg -r is given clean and build, else only build
   if [ $REBUILD = "Y" ]; then
-    echo "Clean all files"
+    echo "Clean all files, rebuild project"
     echo ""
-    ssh -t pi@$1 "cd $3$project_name/Debug; make clean; make all -j $THREADS"
+    ssh -t pi@$1 "cd $3$project_name/Debug; make clean; make all -j$THREADS"
   else
-    ssh -t pi@$1 "cd $3$project_name/Debug; make all -j $THREADS"
+    echo "Rebuild project"
+    echo ""
+    ssh -t pi@$1 "cd $3$project_name/Debug; make all -j$THREADS"
   fi
 
   # print success / fail message
-  STATUS=$?
-  if [ $STATUS -eq 0 ]; then
+  if [ $? -eq 0 ]; then
     echo " "
     echo "[$(date +%H:%M:%S)] Finished! Build complete!"
   else
