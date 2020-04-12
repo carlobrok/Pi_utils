@@ -7,7 +7,7 @@
   * `sudo apt-get update`
   * `sudo apt-get install python3-all-dev`
   * `sudo apt-get install python3-pip`
-  * `pip3 install wiringpi`
+  * `sudo pip3 install wiringpi telepot`
 
 Script starts program when switch pin (internal pullup) is high.
 When the pin is pulled low, the program will stop, the logfiles will be saved to a tar.gz archive.
@@ -19,7 +19,7 @@ The status led will be on while the program is running and turns off as soon as 
 * set ***folder_path*, *program_name*, *led_pin* and *sw_pin*** in the start_program.py file
 * write to ***rc.local*** :
   * `sudo nano /etc/rc.local`
-  * before `exit 0` write `su pi -c 'python3 /home/pi/path/to/your/project/start_program.py &'`
+  * before `exit 0` write `python3 /home/pi/path/to/your/directory/start_program.py &`
 
 Now the script starts every time the raspberry pi boots.
 
