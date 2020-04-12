@@ -19,7 +19,7 @@ The status led will be on while the program is running and turns off as soon as 
 * set ***folder_path*, *program_name*, *led_pin* and *sw_pin*** in the start_program.py file
 * write to ***rc.local*** :
   * `sudo nano /etc/rc.local`
-  * before `exit 0` write `su pi -c 'python3 /home/pi/path/to/your/project/start_program.py &'
+  * before `exit 0` write `su pi -c 'python3 /home/pi/path/to/your/project/start_program.py &'`
 
 Now the script starts every time the raspberry pi boots.
 
